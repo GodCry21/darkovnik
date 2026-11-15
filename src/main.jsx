@@ -35,66 +35,109 @@ import "./style.css";
 const GAS_URL = import.meta.env.VITE_GAS_URL || "";
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 const isGAS = () => Boolean(GAS_URL);
-let bridge = null,
-  ready = false,
-  seq = 0,
-  waiters = new Map(),
-  readyWaiters = [];
+let bridge = null;
+let bridgeWindow = null;
+let bridgeOrigin = null;
+let ready = false;
+let seq = 0;
+let waiters = new Map();
+let readyWaiters = [];
+
 function initBridge() {
   if (bridge || !GAS_URL) return;
+
+  window.addEventListener("message", (event) => {
+    // Apps Script HTML běží na googleusercontent.com
+    let hostname;
+    try {
+      hostname = new URL(event.origin).hostname;
+    } catch {
+      return;
+    }
+
+    if (
+      !hostname.endsWith(".googleusercontent.com") ||
+      event.data?.app !== "darkovnik"
+    )
+      return;
+
+    if (event.data.type === "ready") {
+      if (ready) return;
+
+      bridgeWindow = event.source;
+      bridgeOrigin = event.origin;
+      ready = true;
+
+      readyWaiters.splice(0).forEach((fn) => fn());
+      return;
+    }
+
+    // Odpovědi přijímáme pouze od stejného okna.
+    if (event.source !== bridgeWindow || event.origin !== bridgeOrigin) return;
+
+    if (event.data.type === "result") {
+      const item = waiters.get(event.data.id);
+      if (!item) return;
+
+      waiters.delete(event.data.id);
+      clearTimeout(item.timer);
+
+      if (event.data.ok) {
+        item.resolve(event.data.result);
+      } else {
+        item.reject(new Error(event.data.error || "Neznámá chyba"));
+      }
+    }
+  });
+
   bridge = document.createElement("iframe");
   bridge.src = GAS_URL;
   bridge.style.cssText =
     "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
   bridge.title = "Datové připojení";
   bridge.setAttribute("aria-hidden", "true");
+
   document.body.appendChild(bridge);
-  window.addEventListener("message", (event) => {
-    if (
-      event.source !== bridge.contentWindow ||
-      event.data?.app !== "darkovnik"
-    )
-      return;
-    if (event.data.type === "ready") {
-      ready = true;
-      readyWaiters.splice(0).forEach((fn) => fn());
-      return;
-    }
-    if (event.data.type === "result") {
-      const item = waiters.get(event.data.id);
-      if (!item) return;
-      waiters.delete(event.data.id);
-      clearTimeout(item.timer);
-      event.data.ok
-        ? item.resolve(event.data.result)
-        : item.reject(new Error(event.data.error || "Neznámá chyba"));
-    }
-  });
 }
+
 function call(method, ...args) {
   return new Promise((resolve, reject) => {
-    if (!GAS_URL) return reject(new Error("VITE_GAS_URL není nastaveno."));
+    if (!GAS_URL) {
+      return reject(new Error("VITE_GAS_URL není nastaveno."));
+    }
+
     initBridge();
+
     const send = () => {
-      const id = String(++seq),
-        timer = setTimeout(() => {
-          waiters.delete(id);
-          reject(
-            new Error(
-              "Apps Script neodpovídá. Zkontroluj nasazení a případné blokování iframe.",
-            ),
-          );
-        }, 35000);
+      const id = String(++seq);
+
+      const timer = setTimeout(() => {
+        waiters.delete(id);
+        reject(new Error("Apps Script neodpovídá."));
+      }, 35000);
+
       waiters.set(id, { resolve, reject, timer });
-      bridge.contentWindow.postMessage(
-        { app: "darkovnik", type: "call", id, method, args },
-        "*",
+
+      bridgeWindow.postMessage(
+        {
+          app: "darkovnik",
+          type: "call",
+          id,
+          method,
+          args,
+        },
+        bridgeOrigin,
       );
     };
-    if (ready) send();
-    else readyWaiters.push(send);
+
+    if (ready) {
+      send();
+    } else {
+      readyWaiters.push(send);
+    }
   });
 }
+
 const SESSION_KEY = "darkovnik_session_v1";
 const emptyGift = {
   name: "",
