@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"><title>Dárkovník bridge</title></head>
+<body><script>
+(function(){
+  var allowed = <?!= JSON.stringify(allowedOrigin) ?>;
+  var publicMethods = ['signInWithGoogle','logoutSession','dashboard','saveProfile','createGroup','inviteMember','setRole','saveGift','deleteGift','reserveGift','updateReservation','markReceived','saveEvent','deleteEvent','fetchProduct'];
+  window.addEventListener('message',function(event){
+    if(event.origin!==allowed || event.source!==window.parent)return;
+    var msg=event.data;
+    if(!msg||msg.app!=='darkovnik' || msg.type!=='call'||typeof msg.id!=='string'||typeof msg.method!=='string'||!publicMethods.includes(msg.method))return;
+    var args=Array.isArray(msg.args)?msg.args:[];
+    if(args.length>6)return;
+    try{
+      google.script.run.withSuccessHandler(function(res){event.source.postMessage({app:'darkovnik',type:'result',id:msg.id,ok:true,result:res},allowed);})
+       .withFailureHandler(function(err){event.source.postMessage({app:'darkovnik',type:'result',id:msg.id,ok:false,error:err&&err.message||String(err)},allowed);})[msg.method].apply(null,args);
+    }catch(e){event.source.postMessage({app:'darkovnik',type:'result',id:msg.id,ok:false,error:e.message},allowed);}
+  });
+  window.parent.postMessage({app:'darkovnik',type:'ready'},allowed);
+})();
+</script></body></html>
