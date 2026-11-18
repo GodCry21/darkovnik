@@ -55,7 +55,7 @@ function App(){const [idToken,setIdToken]=useState(()=>{try{return localStorage.
  const groups=data?.groups||[];const own=data?.myGifts||[];const visible=data?.visibleGifts||[];const myReservations=data?.myReservations||[];const selectedGroup=groups.find(x=>x.id===groupId);const currentPerson=selectedGroup?.members?.find(x=>x.id===personId);
  const openGift=(gift=null)=>{setEditing(gift);setGiftForm(gift?{...gift,groupIds:gift.groupIds||[]}: {...emptyGift,groupIds:groups.map(g=>g.id)});setModal('gift')};
  const openShare=(gid)=>{setGroupId(gid);setShareSelection(own.filter(g=>g.groupIds?.includes(gid)).map(g=>g.id));setModal('share')};
- const openSettings=(g)=>{setGroupForm({...g,birthdaysEnabled:g.birthdaysEnabled!=='false',christmasEnabled:g.christmasEnabled==='true',easterEnabled:g.easterEnabled==='true',namedaysEnabled:g.namedaysEnabled==='true'});setModal('settings')};
+ const openSettings=(g)=>{const on=v=>String(v).trim().toLowerCase()==='true';setGroupForm({...g,birthdaysEnabled:String(g.birthdaysEnabled).trim().toLowerCase()!=='false',christmasEnabled:on(g.christmasEnabled),easterEnabled:on(g.easterEnabled),namedaysEnabled:on(g.namedaysEnabled)});setModal('settings')};
  const openEvent=()=>{setEventForm({name:'',date:'',repeatYearly:true,userId:''});setModal('event')};
  const availableFor=(gift)=>gift.groupIds.filter(id=>groups.some(g=>g.id===id));
  const editReservation=(r)=>{setManageReservation(r);setManageQty(Number(r.quantity));setModal('manageReservation')};
