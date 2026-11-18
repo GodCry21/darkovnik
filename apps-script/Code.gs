@@ -194,16 +194,18 @@ let memoRecords_ = {};
 function records_(name) {
   if (memoRecords_[name]) return memoRecords_[name];
   const s = sheet_(name),
-    v = s.getDataRange().getDisplayValues();
-  const head = HEADERS[name];
-  return (memoRecords_[name] = v
-    .slice(1)
-    .map((r, i) =>
-      Object.fromEntries([
-        ...head.map((h, j) => [h, r[j] || ""]),
-        ["_row", i + 2],
-      ]),
-    ));
+    head = HEADERS[name],
+    lastRow = s.getLastRow(),
+    v =
+      lastRow > 1
+        ? s.getRange(2, 1, lastRow - 1, head.length).getDisplayValues()
+        : [];
+  return (memoRecords_[name] = v.map((r, i) =>
+    Object.fromEntries([
+      ...head.map((h, j) => [h, r[j] || ""]),
+      ["_row", i + 2],
+    ]),
+  ));
 }
 function add_(name, obj) {
   const v = HEADERS[name].map((k) =>
