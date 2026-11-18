@@ -20,6 +20,7 @@ const HEADERS = {
     "christmasEnabled",
     "easterEnabled",
     "namedaysEnabled",
+    "holidaysSelected",
   ],
   Members: ["id", "groupId", "userId", "role", "createdAt"],
   Invites: [
@@ -63,7 +64,7 @@ const HEADERS = {
     "createdBy",
   ],
   Notices: ["id", "key", "sentAt"],
-  NameDays: ["date", "names"],
+  NameDays: ["date", "names", "isHoliday"],
   Alerts: [
     "id",
     "userId",
@@ -112,9 +113,9 @@ function setup() {
       d.getUTCFullYear() === 2024;
       d.setUTCDate(d.getUTCDate() + 1)
     ) {
-      dates.push([Utilities.formatDate(d, "UTC", "MM-dd"), ""]);
+      dates.push([Utilities.formatDate(d, "UTC", "MM-dd"), "", "FALSE"]);
     }
-    namedays.getRange(2, 1, dates.length, 2).setValues(dates);
+    namedays.getRange(2, 1, dates.length, 3).setValues(dates);
     namedays.setFrozenRows(1);
   }
   if (!props.getProperty("GOOGLE_CLIENT_ID"))
@@ -562,6 +563,7 @@ function dashboard(token) {
   const nameDays = myGroups.some((g) => enabled_(g.namedaysEnabled))
     ? nameDaysByName_()
     : null;
+  const holidayOptions = holidayOptions_();
   const autoEvents = [];
   for (const g of myGroups) {
     if (String(g.birthdaysEnabled).trim().toLowerCase() !== "false")
@@ -578,7 +580,11 @@ function dashboard(token) {
             automatic: true,
           });
       }
-    if (enabled_(g.christmasEnabled))
+    autoEvents.push(...createHolidayEvents_(g, holidayOptions));
+    if (
+      enabled_(g.christmasEnabled) &&
+      !holidaySelected_(g.holidaysSelected).some((id) => id === "12-24|Vánoce")
+    )
       autoEvents.push({
         id: "christmas:" + g.id,
         groupId: g.id,
@@ -609,6 +615,7 @@ function dashboard(token) {
   return {
     profile: clean_(u),
     groups: myGroups,
+    holidayOptions,
     myGifts,
     visibleGifts,
     myReservations,
@@ -654,6 +661,7 @@ function createGroup(token, name) {
       christmasEnabled: "false",
       easterEnabled: "false",
       namedaysEnabled: "false",
+      holidaysSelected: "[]",
     });
     add_("Members", {
       id: uid_(),
@@ -685,14 +693,75 @@ function updateGroup(token, data) {
       description: str_(data.description, 800),
       image: image_(data.image),
       birthdaysEnabled: String(enabled_(data.birthdaysEnabled)),
-      christmasEnabled: String(enabled_(data.christmasEnabled)),
+      christmasEnabled: "false",
       easterEnabled: String(enabled_(data.easterEnabled)),
       namedaysEnabled: String(enabled_(data.namedaysEnabled)),
+      holidaysSelected: JSON.stringify(
+        validateHolidaySelection_(data.holidaysSelected),
+      ),
     };
     require_(patch.name.length >= 2, "Vyplňte název skupiny.");
     update_("Groups", g, patch);
     return { ok: true, group: { id: g.id, ...patch } };
   });
+}
+/** Významné svátky jsou řádky NameDays s isHoliday=TRUE.
+ * Jeden den může mít více řádků, např. jmeniny i Vánoce.
+ * ID kombinace datum|název je stabilní pro výběr v nastavení skupiny.
+ */
+function holidayOptions_() {
+  const seen = new Set(),
+    result = [];
+  for (const row of records_("NameDays")) {
+    if (!enabled_(row.isHoliday)) continue;
+    const date = String(row.date || "").trim();
+    if (!/^(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$/.test(date)) continue;
+    const name = String(row.names || "").trim();
+    if (!name) continue;
+    const id = date + "|" + name;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    result.push({ id, date, name });
+  }
+  return result.sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) || a.name.localeCompare(b.name, "cs"),
+  );
+}
+function holidaySelected_(raw) {
+  try {
+    const items = Array.isArray(raw) ? raw : JSON.parse(String(raw || "[]"));
+    return Array.isArray(items)
+      ? items.filter((x) => typeof x === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+function validateHolidaySelection_(raw) {
+  const items = holidaySelected_(raw);
+  require_(items.length <= 366, "Příliš mnoho vybraných svátků.");
+  const valid = new Set(holidayOptions_().map((x) => x.id));
+  require_(
+    items.every((id) => valid.has(id)),
+    "Některý vybraný svátek není v tabulce NameDays.",
+  );
+  return [...new Set(items)];
+}
+function createHolidayEvents_(group, options) {
+  const selected = new Set(holidaySelected_(group.holidaysSelected));
+  return options
+    .filter((h) => selected.has(h.id))
+    .map((h) => ({
+      id: "holiday:" + group.id + ":" + h.id,
+      groupId: group.id,
+      name: h.name,
+      date: "2024-" + h.date,
+      repeatYearly: "true",
+      userId: "",
+      kind: "holiday",
+      automatic: true,
+    }));
 }
 function setGroupShares(token, groupId, ids) {
   return withLock_(() => {
@@ -754,6 +823,7 @@ function nameDaysByName_() {
   if (cached) return JSON.parse(cached);
   const byName = {};
   for (const row of records_("NameDays")) {
+    if (enabled_(row.isHoliday)) continue;
     const date = String(row.date || "").trim();
     if (!/^(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$/.test(date)) continue;
     for (const candidate of String(row.names || "").split(/[,;\n]/)) {
@@ -1205,6 +1275,7 @@ function sendReminders() {
     const names = groups.some((g) => enabled_(g.namedaysEnabled))
       ? nameDaysByName_()
       : null;
+    const holidays = holidayOptions_();
     for (const group of groups) {
       const gm = members.filter((x) => x.groupId === group.id);
       if (String(group.birthdaysEnabled).trim().toLowerCase() !== "false")
@@ -1220,7 +1291,12 @@ function sendReminders() {
               userId: user.id,
             });
         }
-      if (enabled_(group.christmasEnabled))
+      const selectedHolidays = holidaySelected_(group.holidaysSelected);
+      events.push(...createHolidayEvents_(group, holidays));
+      if (
+        enabled_(group.christmasEnabled) &&
+        !selectedHolidays.includes("12-24|Vánoce")
+      )
         events.push({
           id: "christmas:" + group.id,
           groupId: group.id,
