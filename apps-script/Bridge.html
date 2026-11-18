@@ -8,7 +8,7 @@
     <script>
       (function(){
         var allowed = <?!= JSON.stringify(allowedOrigin) ?>;
-        var publicMethods = ['signInWithGoogle','logoutSession','dashboard','saveProfile','createGroup','inviteMember','setRole','saveGift','deleteGift','reserveGift','updateReservation','markReceived','saveEvent','deleteEvent','fetchProduct'];
+        var publicMethods = ['signInWithGoogle','logoutSession','dashboard','saveProfile','createGroup','inviteMember','setRole','saveGift','deleteGift','reserveGift','updateReservation','markReceived','saveEvent','deleteEvent','fetchProduct','updateGroup','setGroupShares'];
         window.addEventListener('message',function(event){
           if(event.origin!==allowed || event.source!==window.top)return;
           var msg=event.data;
