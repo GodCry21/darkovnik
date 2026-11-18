@@ -10,3 +10,126 @@
 @media(max-width:760px){.sidebar{display:none}.topbar{height:61px;justify-content:space-between;padding:0 17px}.mobileLogo{display:flex;align-items:center;gap:10px;color:var(--brand);font-weight:800;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}.content{padding:22px 14px calc(105px + env(safe-area-inset-bottom))}.mobileNav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(255,255,255,.97);backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:7px 4px calc(7px + env(safe-area-inset-bottom));box-shadow:0 -6px 18px rgba(25,54,33,.045)}.mobileNav button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;background:transparent;border:0;color:#78847a;font-size:.64rem;font-weight:700;padding:8px 0;min-width:0;border-radius:9px}.mobileNav button.active{color:var(--brand);background:#eff6f0}.mobileNav button svg{width:20px;height:20px}.pageHead{align-items:start;gap:13px}.pageHead .btn{min-width:0}.pageHead h1{font-size:1.62rem}.welcome{padding:25px;min-height:unset}.welcomeArt{display:none}.stats{gap:9px}.stat{display:block;padding:13px 11px;min-height:90px}.statIcon{display:none}.stat strong{display:block;font-size:1.42rem}.stat span{font-size:.72rem}.panel{padding:16px}.giftGrid,.groupGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.giftImage{height:135px}.giftContent{padding:11px;gap:7px}.giftCard h3{font-size:.85rem}.giftActions{align-items:stretch}.giftActions .btn{width:100%}.giftActions .smallLink{font-size:.74rem}.groupCard{padding:15px;min-height:170px}.groupIcon{width:44px;height:44px}.groupCard h3{font-size:.92rem}.groupCard p{font-size:.74rem}.modalOverlay{align-items:flex-end;padding:0}.modal{width:100%;max-height:94dvh;border-radius:19px 19px 0 0;padding-bottom:env(safe-area-inset-bottom)}.modalHead{padding:18px 19px}.modalForm{padding:19px}.groupSettings{padding:0 0 14px}.groupSettings .settingsSection{padding:20px 19px}.calendarCell{min-height:69px;padding:5px;gap:3px}.dayEvents{display:none}.dayDots{display:flex;justify-content:center;flex-wrap:wrap}.dayNumber{font-size:.72rem;width:27px;height:27px}.calendarToolbar{padding:10px}.calendarMonth h2{min-width:130px;font-size:.98rem}.calendarMonth{gap:4px}.calendarMonth button{width:31px;height:31px}.calendarViewSwitch button{padding:8px 9px;font-size:.74rem}.weekday{font-size:.69rem}.calendarList{padding:15px}.calendarLegend{gap:8px;font-size:.69rem}.selectedDayEvents{padding:14px}.loginShell{grid-template-columns:1fr}.loginCard{padding:32px 24px}.loginArt{display:none}.alertBanner{align-items:flex-start}.alertBanner>div{flex-wrap:wrap}.noticeBar,.toastError{bottom:calc(83px + env(safe-area-inset-bottom));left:12px;right:12px}.reservation{flex-wrap:wrap}.reservation .subtleBtn{margin-left:auto}}
 @media(max-width:390px){.pageHead{flex-wrap:wrap}.giftGrid,.groupGrid{grid-template-columns:1fr}.giftImage{height:175px}.calendarToolbar{justify-content:center}.calendarMonth{width:100%;justify-content:center}.calendarCell{min-height:59px;padding:3px}.calendarViewSwitch{width:100%;justify-content:center}.formTwo{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Dárkovník – střídmý systém rozhraní, v4.2 */
+:root{
+  --ink:#202b36;--muted:#72808e;--brand:#286d70;--brand-deep:#205a5d;
+  --surface:#fff;--canvas:#f4f6f7;--border:#dfe5e8;
+  --shadow:0 10px 34px rgba(32,43,54,.05);
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  color:var(--ink);background:var(--canvas)
+}
+body{background:var(--canvas)}
+body,button,input,textarea,select{font-family:inherit}
+button,input,textarea,select{touch-action:manipulation}
+button{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+button:active:not(:disabled){transform:translateY(1px)}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #a8d9d6;outline-offset:2px}
+button:not(:disabled),a,select,label:has(input){-webkit-tap-highlight-color:transparent}
+h1,h2,h3{font-weight:720;letter-spacing:-.035em;color:#1f303a}
+.content{max-width:1340px;margin:0 auto;width:100%}
+.panel,.giftCard,.groupCard,.stat,.modal{box-shadow:var(--shadow);border-color:var(--border)}
+.panel,.giftCard,.groupCard{border-radius:17px}
+.sidebar{background:#fff;border-right:1px solid var(--border)}
+.logo{font-size:1.25rem;letter-spacing:-.03em;font-weight:780}
+.logoIcon{background:#e0f2ee;color:#23656c;border-radius:12px}
+.sideLabel,.eyebrow{letter-spacing:.09em;font-size:.68rem;color:#81909b}
+.navItem{border-radius:10px;font-weight:570;min-height:45px}
+.navItem.active{background:#e6f3f1;color:#205f62;font-weight:720}
+.navItem:hover:not(.active){background:#f2f5f6}
+.logoutItem{font-size:.83rem!important;color:#83909b!important;opacity:.82;min-height:36px!important}
+.logoutItem:hover{color:#bc5353!important;opacity:1}
+.userChip{width:100%;padding:9px 7px;border:0;border-radius:12px;background:transparent;display:flex;align-items:center;text-align:left;color:inherit;gap:10px;cursor:pointer}
+.userChip:hover{background:#f0f5f5}
+.userChip>div:last-child{overflow:hidden}
+.userChip b,.userChip span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topAvatar{padding:0;border:0;cursor:pointer;display:grid;place-items:center}
+.topAvatar:hover{box-shadow:0 0 0 3px #d7eae8}
+.btn:not(.outlineDanger){background:var(--brand);border-radius:10px;border-color:var(--brand);font-weight:650}
+.btn:not(.outlineDanger):hover{background:var(--brand-deep)}
+.subtleBtn,.textButton,.smallLink{border-radius:9px}
+.groupToolRow{gap:9px;flex-wrap:wrap}
+.groupToolRow .btn{font-size:.875rem}
+.groupChoiceList{display:flex;gap:9px;flex-wrap:wrap;padding:5px 0 2px}
+.groupChoice{display:inline-flex;align-items:center;gap:7px;justify-content:center;border:1px solid #dbe2e6;border-radius:12px;padding:10px 14px;min-height:42px;background:#f2f4f5;color:#77828b;font-weight:650}
+.groupChoice:hover{border-color:#6ba3a5;color:#28676c}
+.groupChoice.selected{background:#e0f3ee;border-color:#65b4a9;color:#1b665e;box-shadow:inset 0 0 0 1px #a3d5cd}
+.groupChoice svg{flex:none}
+.quantityControl{display:inline-grid;grid-template-columns:46px 60px 46px;border:1px solid #d5dfe1;border-radius:12px;overflow:hidden;min-height:43px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.02)}
+.quantityControl button{background:#eff6f5!important;border:0!important;border-radius:0!important;color:#247375!important;font-size:1.25rem;font-weight:650}
+.quantityControl button:hover:not(:disabled){background:#d7ebe7!important}
+.quantityControl input{background:#fff;text-align:center;border:0!important;border-left:1px solid #e3e8ea!important;border-right:1px solid #e3e8ea!important;border-radius:0!important;min-width:0;width:100%;box-shadow:none!important;font-weight:700;appearance:textfield;-moz-appearance:textfield}
+.quantityControl input::-webkit-inner-spin-button,.quantityControl input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.settingToggle{border:1px solid #e1e7ea;border-radius:12px;min-height:66px;padding:14px 16px;margin:7px 0;background:#fff}
+.settingToggle:hover{border-color:#b2d4d2}
+.settingToggleText b{color:#253842;font-size:.92rem}
+.settingToggleText small{color:#7a8892;line-height:1.5}
+.holidayPicker{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-top:14px;max-height:350px;overflow:auto}
+.holidayChoice{padding:12px 14px;border:1px solid #e2e7e9;border-radius:11px;background:#fff}
+.holidayChoice:has(input:checked){border-color:#8ebbb7;background:#edf7f5}
+.holidayChoiceMain b{font-size:.87rem}
+.holidayChoiceMain small{font-size:.75rem}
+.settingsSection{border-radius:15px;padding-block:18px}
+.modal{border-radius:19px;overflow:auto;max-height:min(91dvh,920px)}
+.modalHead{position:sticky;top:0;background:#fff;z-index:5;border-bottom:1px solid #edf0f1}
+.modalActions{padding-top:14px}
+.field>span,.field>label{font-weight:650;color:#465862;font-size:.83rem}
+.field input,.field textarea,.field select{border-color:#dce4e6;border-radius:10px}
+.giftCard{overflow:hidden}
+.giftCard:hover{box-shadow:0 10px 30px rgba(37,54,61,.09)}
+.giftImage{background:#f1f4f5}
+.giftContent h3{font-size:1.03rem;line-height:1.32}
+.tag{border-radius:8px;font-size:.72rem;font-weight:670}
+.statusToggle{display:inline-flex;margin:0 16px 15px 0;background:#fff;border:1px solid #e1e7ea;padding:9px 12px;border-radius:10px;font-size:.83rem;gap:9px}
+.statusToggle input{accent-color:#287675}
+.calendarEvent{border-radius:12px}
+.event-birthday{background:linear-gradient(90deg,#fff4f3,#fff);border-left:3px solid #cf7b79}
+.event-holiday{background:linear-gradient(90deg,#fff9eb,#fff);border-left:3px solid #c9a35d}
+.event-holiday.event-gifted{background:linear-gradient(90deg,#fff2d9,#fff);border-left:4px solid #bb8736}
+.event-nameday{background:linear-gradient(90deg,#f3f2fc,#fff);border-left:3px solid #9d91c3}
+.event-custom{background:#f8fafb;border-left:3px solid #a5b4bf}
+.eventType{font-size:.71rem;letter-spacing:.01em;font-weight:750}
+.event-gifted .eventDescription>b,.event-birthday .eventDescription>b{font-weight:800}
+.calendarCell{min-height:90px}
+.calendarCell:hover:not(.outside){background:#f2f8f7}
+.calendarCell.chosen{background:#e8f4f1}
+.pendingInvites{margin-top:20px;border-top:1px solid #e5e9eb;padding-top:16px}
+.pendingInvites h3{font-size:.92rem;margin-bottom:9px}
+.pendingInvite{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid #eef1f3;flex-wrap:wrap;font-size:.84rem}
+.pendingInvite .tag{white-space:nowrap}
+/* notification surface: anchored under top bar, not an inline panel */
+.topbar{position:relative;z-index:25}
+.popoverDismiss{position:fixed;inset:0;border:0;background:transparent;z-index:35;cursor:default}
+.alertsPanel{position:fixed;top:74px;right:22px;width:min(405px,calc(100vw - 24px));max-height:min(520px,calc(100dvh - 120px));overflow:auto;z-index:36;padding:17px;box-shadow:0 18px 54px rgba(19,39,48,.18);border:1px solid #e0e6e9;border-radius:16px;animation:dropIn .16s ease-out}
+.alertsPanel:before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#70a9a6;border-radius:16px 16px 0 0}
+.alertEntry{border-radius:11px;margin-top:8px;padding:12px!important;background:#f8fafb}
+.alertEntry.unread{background:#ecf5f3}
+.alertEntry b{font-size:.84rem;line-height:1.45}
+.alertEntry small{display:block;margin-top:5px;color:#77858f}
+@keyframes dropIn{from{opacity:0;transform:translateY(-8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* Original CSS gift loader, no remote animation dependencies */
+.loaderArea{display:flex;flex-direction:column;align-items:center;gap:15px;padding:25px 10px;color:#60737e}
+.giftLoader{width:82px;height:82px;position:relative;--gift:#317c79;animation:giftBreathe 2s ease-in-out infinite}
+.giftLoaderBox{position:absolute;left:14px;right:14px;bottom:8px;height:43px;border-radius:5px 5px 9px 9px;background:linear-gradient(90deg,#a6d9d0 0 44%,var(--gift) 44% 56%,#a6d9d0 56%);box-shadow:0 8px 18px #286f6d20}
+.giftLoaderLid{position:absolute;left:9px;right:9px;top:19px;height:13px;border-radius:5px;background:linear-gradient(90deg,#62a9a4 0 45%,#255d62 45% 55%,#62a9a4 55%);transform-origin:75% 100%;animation:giftOpen 2s ease-in-out infinite}
+.giftLoaderRibbon{position:absolute;left:32px;top:6px;width:18px;height:16px;border:5px solid var(--gift);border-radius:75% 75% 20% 20%;transform:rotate(-30deg);animation:giftRibbon 2s ease-in-out infinite}
+@keyframes giftOpen{0%,20%,75%,100%{transform:translateY(0) rotate(0)}38%,56%{transform:translateY(-15px) rotate(-12deg)}}
+@keyframes giftBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+@keyframes giftRibbon{0%,20%,75%,100%{transform:translateY(0) rotate(-30deg)}38%,56%{transform:translateY(-15px) rotate(-45deg)}}
+.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+/* prevent accidental selection on labels / chrome; keep inputs and content selectable */
+.sidebar,.topbar,.mobileNav,.calendarToolbar,.calendarLegend,.quantityControl button,.settingToggleText,.groupChoice,.btn,.tag,.logo{-webkit-user-select:none;user-select:none}
+@media(max-width:760px){
+  .content{padding-bottom:105px}
+  .panel,.giftCard,.groupCard{border-radius:14px}
+  .pageHead{gap:12px}
+  .pageHead h1{font-size:clamp(1.55rem,7vw,2.05rem)}
+  .alertsPanel{top:67px;right:12px;width:calc(100vw - 24px);max-height:65dvh}
+  .holidayPicker{grid-template-columns:1fr;max-height:42dvh}
+  .quantityControl{grid-template-columns:46px 64px 46px}
+  .calendarCell{min-height:68px}
+  .modal{border-radius:18px 18px 0 0;max-height:94dvh}
+  .groupChoice{padding:10px 13px}
+  .settingToggle{padding:12px 13px}
+}
+@media(prefers-reduced-motion:reduce){.giftLoader,.giftLoaderLid,.giftLoaderRibbon,.spin,.alertsPanel{animation:none!important}button{transition:none!important}}
