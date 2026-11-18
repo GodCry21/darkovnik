@@ -1,0 +1,46 @@
+/* Dárkovník v3 – restrained product UI, accessible responsive layouts */
+:root{font-family:Inter,'DM Sans',system-ui,-apple-system,sans-serif;color:#172631;background:#f6f8fa}
+body{background:#f6f8fa;color:#172631;font-size:14px}
+h1,h2,h3{font-family:Inter,'Plus Jakarta Sans',system-ui,sans-serif;letter-spacing:-.035em;color:#142532}
+h1{letter-spacing:-.045em}
+.sidebar{background:#fff;border-right:1px solid #e5ebef;width:246px;padding:27px 15px 20px}
+.logo{color:#192d3a;font-size:1.25rem;padding:0 12px 43px;gap:12px}
+.logoIcon,.brandIcon{background:#155e63;border-radius:11px;box-shadow:none}
+.sideLabel,.eyebrow{color:#68838a;letter-spacing:.1em}
+.navItem{color:#5d707c;border-radius:9px;padding:13px 14px;font-size:.86rem;font-weight:650;transition:background .15s,color .15s}
+.navItem.active{color:#0b5961;background:#e6f2f2}
+.navItem:hover{color:#0b5961;background:#edf5f5}
+.topbar{background:#fff;border-bottom:1px solid #e5ebef;height:68px;padding:0 36px}
+.content{padding:33px 36px 85px;max-width:1280px}
+.btn{background:#155e63;border-radius:9px;box-shadow:none;padding:11px 17px;font-weight:700;transition:background .15s,transform .15s}
+.btn:hover{background:#10494d}
+.btn:active,.groupCard:active{transform:translateY(1px)}
+.btn.sm{border-radius:8px}
+.pageHead{margin:4px 0 24px}.pageHead p{color:#637581}.muted{color:#6e808a}.small{font-size:.8rem}
+.panel,.stat,.giftCard,.groupCard{border:1px solid #e2e9ed;background:#fff;border-radius:12px;box-shadow:0 2px 11px #1b344008}
+.panel{padding:24px}.giftCard{transition:border-color .16s,box-shadow .16s;min-width:0}.giftCard:hover{border-color:#bfd4d8;box-shadow:0 7px 25px #10364010}
+.welcome{background:linear-gradient(115deg,#e9f3f2,#f3f6f5);border:1px solid #dce9e7;border-radius:15px;min-height:236px;padding:35px 40px}.welcome p{color:#526b71}.welcomeArt{color:#4b8588;opacity:.28}
+.stats{gap:14px}.stat{min-height:104px;padding:16px 19px}.stat strong{color:#1c3640}.statIcon.peach,.statIcon.lav,.statIcon.mint{background:#e8f3f1;color:#277479}
+.giftImage{background:#f3f7f8;color:#a7bec4;height:182px}.giftContent{padding:18px}.giftContent h3{font-size:.96rem;line-height:1.4}
+.giftMeta{color:#64828a}.giftActions{gap:10px;padding-top:14px}.smallLink,.textButton{color:#0f6268}.tag{border-radius:6px;font-weight:700}.tag.orange{background:#fff2dc;color:#98601f}.tag.teal{background:#e0f3ef;color:#176c5d}
+.groupIcon,.emptyIcon{background:#e9f2f3;color:#226b73;border-radius:12px}
+.groupCard:hover{border-color:#a6c6cb}.groupCard p{color:#71818b}
+.mobileLogo{color:#155e63}.dateSquare{background:#e8f3f3;color:#236d74}.miniPresent{background:#eaf2f4;color:#236d74;display:grid;place-items:center}
+.modalOverlay{background:#14283292;backdrop-filter:blur(5px)}.modal{border-radius:16px;box-shadow:0 30px 90px #0c263540}.modalHead{border-color:#e5eaee}.modalHead h2{font-size:1.15rem}
+.field{color:#304a56}.field input,.field textarea,.field select{border-color:#d9e3e8;border-radius:9px;color:#173440}.field input:focus,.field textarea:focus,.field select:focus{border-color:#3a8890;box-shadow:0 0 0 3px #d7eeee}
+.subtleBtn{min-height:34px;background:#f1f7f7;border-color:#cce0e1;color:#175f65;border-radius:8px;font-weight:650;cursor:pointer}.subtleBtn:hover{background:#e4f2f2}
+.quantityControl{border-color:#cddde1}.quantityControl button{background:#edf5f5;color:#145e65}.quantityControl button:hover:not(:disabled){background:#dceced}
+.checkLine input,.checkList input{accent-color:#13666b}.checkList label{border-color:#dae5e8}
+.alertBanner{background:#e8f3f4;border:1px solid #c9e2e5;color:#174c54;border-radius:11px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.alertBanner>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.alertBanner span{color:#54727a}.alertBanner button{border:1px solid #a6c9cf;border-radius:8px;background:white;color:#155e63;font-weight:700;padding:8px 12px;white-space:nowrap}
+.alertsPanel{border-color:#c9e0e4}.alertEntry{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 0;border-bottom:1px solid #e6ecee}.alertEntry:last-child{border-bottom:0}.alertEntry div{display:grid;gap:7px}.alertEntry b{font-size:.87rem;font-weight:600}.alertEntry small{color:#72828a;font-size:.75rem}.alertEntry.unread{background:#f5fbfa;padding-left:10px;padding-right:10px;border-radius:8px}
+.myGiftBookings{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.bookingButton{display:inline-flex;align-items:center;gap:6px;border:1px solid #cddfe3;border-radius:7px;padding:7px 8px;background:#f5faf9;color:#205a61;font-size:.75rem;font-weight:650}
+.bookingButton:hover{background:#e8f4f2}.bookingDot{height:7px;width:7px;border-radius:50%;background:#db9841}.bookingDot.purchased{background:#24836d}
+.reservationActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:23px}.reservationActions .btn{min-height:43px}.outlineDanger{background:#fff;color:#a24745;border:1px solid #e6b4b0}.outlineDanger:hover{background:#fff2f0}
+.noticeBar{background:#e9f5f2;border:1px solid #badbd2;color:#175c50}
+.mobileNav{border-color:#e2e9ec;box-shadow:0 -4px 20px #16323b0a}.mobileNav button.active{color:#12636a}
+.loginArt{background:#eaf3f3}.loginCard h1 em{color:#166a70}
+:focus-visible{outline:3px solid #57aeb6!important;outline-offset:2px}
+@media(max-width:1000px){.content{padding:25px 24px 90px}.topbar{padding:0 24px}}
+@media(max-width:700px){.content{padding:19px 15px 100px}.topbar{padding:0 17px}.welcome{padding:26px 23px;min-height:200px}.welcome p{max-width:290px}.panel{padding:17px}.stats{gap:8px}.stat{min-height:112px;padding:12px 9px}.giftGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.giftImage{height:142px}.giftContent{padding:12px}.giftContent h3{font-size:.85rem}.reservation{flex-wrap:wrap}.reservation .subtleBtn{margin-left:auto}.groupGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.groupCard{padding:17px}.mobileNav{height:74px;background:#fff}.modal{border-radius:18px 18px 0 0}.modalOverlay{backdrop-filter:blur(3px)}.alertBanner{align-items:flex-start;flex-direction:column}.reservationActions{flex-direction:column}.reservationActions .btn{width:100%}}
+@media(max-width:390px){.giftGrid,.groupGrid{grid-template-columns:1fr}.giftImage{height:180px}.stat strong{font-size:1.2rem}.stat span:last-child{font-size:.64rem}}
