@@ -1,0 +1,26 @@
+{
+  "id": "/darkovnik/",
+  "name": "Dárkovník – přání a překvapení",
+  "short_name": "Dárkovník",
+  "description": "Seznam přání, rezervace dárků a společný kalendář.",
+  "start_url": "/darkovnik/",
+  "scope": "/darkovnik/",
+  "display": "standalone",
+  "background_color": "#f7f8f6",
+  "theme_color": "#24594c",
+  "lang": "cs",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
