@@ -552,24 +552,42 @@ function dashboard(token) {
     res = records_("Reservations"),
     events = records_("Events");
   const invites = records_("Invites");
+  // Jeden průchod tabulkami. Vyhledávání uvnitř map() by při větším počtu
+  // účtů / přání zbytečně opakovaně procházelo celé listy.
+  const usersById = new Map(users.map((x) => [x.id, x]));
+  const giftsById = new Map(gifts.map((x) => [x.id, x]));
+  const groupsById = new Map(groups.map((x) => [x.id, x]));
+  const membersByGroup = new Map(),
+    sharesByGift = new Map(),
+    reservationsByGift = new Map();
+  for (const m of members) {
+    if (!membersByGroup.has(m.groupId)) membersByGroup.set(m.groupId, []);
+    membersByGroup.get(m.groupId).push(m);
+  }
+  for (const a of shares) {
+    if (!sharesByGift.has(a.giftId)) sharesByGift.set(a.giftId, []);
+    sharesByGift.get(a.giftId).push(a);
+  }
+  for (const r of res) {
+    if (!reservationsByGift.has(r.giftId)) reservationsByGift.set(r.giftId, []);
+    reservationsByGift.get(r.giftId).push(r);
+  }
   const myGroups = members
     .filter((m) => m.userId === u.id)
     .map((m) => ({
-      ...clean_(groups.find((g) => g.id === m.groupId)),
+      ...clean_(groupsById.get(m.groupId)),
       role: m.role,
-      members: members
-        .filter((y) => y.groupId === m.groupId)
-        .map((y) => {
-          const x = users.find((z) => z.id === y.userId);
-          return {
-            id: x.id,
-            name: x.name,
-            email: x.email,
-            birthday: x.birthday,
-            avatar: x.avatar || "",
-            role: y.role,
-          };
-        }),
+      members: (membersByGroup.get(m.groupId) || []).map((y) => {
+        const x = usersById.get(y.userId);
+        return {
+          id: x.id,
+          name: x.name,
+          email: x.email,
+          birthday: x.birthday,
+          avatar: x.avatar || "",
+          role: y.role,
+        };
+      }),
       pendingInvites:
         m.role === "admin"
           ? invites
@@ -590,38 +608,38 @@ function dashboard(token) {
     .filter((g) => g.ownerId === u.id)
     .map((g) => ({
       ...clean_(g),
-      groupIds: shares.filter((s) => s.giftId === g.id).map((s) => s.groupId),
+      groupIds: (sharesByGift.get(g.id) || []).map((s) => s.groupId),
     }));
   const groupsIds = new Set(myGroups.map((g) => g.id));
   const visibleGifts = gifts
     .filter(
       (g) =>
         g.ownerId !== u.id &&
-        shares.some((s) => s.giftId === g.id && groupsIds.has(s.groupId)),
+        (sharesByGift.get(g.id) || []).some((s) => groupsIds.has(s.groupId)),
     )
     .map((g) => {
-      const r = res.filter((x) => x.giftId === g.id),
+      const r = reservationsByGift.get(g.id) || [],
         taken = r.reduce((a, x) => a + Number(x.quantity), 0),
         purchased = r
           .filter((x) => x.status === "purchased")
           .reduce((a, x) => a + Number(x.quantity), 0);
       return {
         ...clean_(g),
-        groupIds: shares
-          .filter((s) => s.giftId === g.id && groupsIds.has(s.groupId))
+        groupIds: (sharesByGift.get(g.id) || [])
+          .filter((s) => groupsIds.has(s.groupId))
           .map((s) => s.groupId),
         available: Math.max(0, Number(g.quantity) - taken),
         reserved: taken,
         purchased,
-        ownerName: (users.find((x) => x.id === g.ownerId) || {}).name || "",
+        ownerName: (usersById.get(g.ownerId) || {}).name || "",
         mine: r.filter((x) => x.buyerId === u.id).map((x) => clean_(x)),
       };
     });
   const myReservations = res
     .filter((r) => r.buyerId === u.id && groupsIds.has(r.groupId))
     .map((r) => {
-      const g = gifts.find((x) => x.id === r.giftId);
-      const person = users.find((x) => x.id === g?.ownerId);
+      const g = giftsById.get(r.giftId);
+      const person = usersById.get(g?.ownerId);
       return {
         ...clean_(r),
         giftName: g?.name || "Smazaný dárek",
