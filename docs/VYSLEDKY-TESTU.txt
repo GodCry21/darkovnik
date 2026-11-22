@@ -1,0 +1,26 @@
+Dárkovník – automatizované testy
+
+PASS Apps Script parses
+PASS Main JSX parses/transpiles
+PASS Messages JSX parses/transpiles
+PASS Bridge exposes called methods implemented by backend
+PASS Required server authorization paths present
+PASS User-selected constraints present
+PASS Figma-inspired light/dark and responsive styles
+7 static and contract checks passed.
+PASS creates Sheets schema incl. messages and invitations
+PASS group owner is admin
+PASS only founder may issue admin invitation
+PASS valid invitation is re-sendable
+PASS member of unrelated group cannot join chat
+PASS priority is persisted; empty price accepted
+PASS invalid price blocked
+PASS gift booking belongs to other member
+PASS own dashboard does not disclose buyers
+PASS anonymous conversation hides sender identity from recipient
+PASS receiver can reply and then block, sender cannot bypass block
+PASS reporting is saved once
+12 backend integration tests passed (in-memory Google Sheets mock).
+PASS browser responsive interaction 390 px
+PASS browser responsive interaction 1366 px
+PASS browser responsive interaction 320 px

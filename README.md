@@ -1,27 +1,24 @@
-# Dárkovník v4 – čistý vývojový projekt
+# Dárkovník – FE + BE
 
-React 18 + Vite + Google Identity Services + Google Apps Script + Google Sheets.
+Kompletní vývojový zdrojový projekt React/Vite + Google Apps Script/Sheets s anonymními zprávami a nový responzivním UI inspirovaným dodanou Figmou.
 
-## Co aplikace umí
-- Google OAuth a dlouhodobé relace bez ukládání Google tokenu do prohlížeče
-- Skupiny, pozvánky, role admin/člen, obrázek a popis skupiny
-- Přání, sdílení do skupin, rezervace a nákupy po kusech, vrácení rezervace
-- Kalendář (měsíc a seznam): narozeniny z profilů, jmeniny a významné svátky z tabulky NameDays, ruční události a vypočítané Velikonoce
-- Jmeniny s alternativami jmen, události `isHoliday`, zvýrazněné dárkové svátky `isGifted`
-- Historie oznámení, připomínky e-mailem pomocí časových triggerů
-- Responzivní rozhraní, instalovatelná PWA bez offline změn databáze
+**Začni dokumentem [PREDANI-A-NASAZENI.md](PREDANI-A-NASAZENI.md).** Obsahuje nastavení OAuth, přípravu nové databáze, postup nasazení, reálně provedené testy a omezení.
 
-## Spuštění
+## Příkazy
 
-Viz [INSTALACE-V4.md](INSTALACE-V4.md).
+```bash
+npm ci
+node tests/verify.cjs
+node tests/backend.integration.cjs
+npm run build
+```
 
-## Bezpečnost
-- `GOOGLE_CLIENT_ID` a `FRONTEND_ORIGIN` jsou v Apps Script Properties.
-- OAuth ID token ověřuje server; dlouhodobá relace se v Sheets ukládá jako SHA-256 hash.
-- Neschovávejte bezpečnostní pravidla pouze do Reactu.
-- Nevkládejte do GitHubu OAuth Client Secret, autentizační tokeny, obsah Google Sheets ani soukromé e-maily.
-- Změny v Google Sheets nepodporují bezpečný offline zápis.
+`dist/` obsahuje už připravený alternativní jednosouborový build bez nakonfigurovaného Google OAuth. Pro skutečné nasazení nastav `.env` podle `.env.example` a aplikaci znovu sestav.
 
-## GitHub Pages
+## Struktura
 
-Projekt používá Vite `base: './'`, takže funguje pod `/darkovnik/`. Nastavte GitHub Actions s proměnnými `VITE_GAS_URL` a `VITE_GOOGLE_CLIENT_ID`.
+- `src/` – funkční frontend napojený na API
+- `apps-script/` – backend a HTML bridge
+- `dist/` – HTML build a statické soubory
+- `tests/` – automatizované kontroly a browser smoke testy
+- `design-reference/` – původní export Figmy

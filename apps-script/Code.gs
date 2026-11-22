@@ -42,6 +42,7 @@ const HEADERS = {
     "receivedQuantity",
     "notes",
     "createdAt",
+    "priority",
   ],
   Shares: ["id", "giftId", "groupId"],
   Reservations: [
@@ -74,6 +75,9 @@ const HEADERS = {
     "emailStatus",
   ],
   Sessions: ["id", "userId", "tokenHash", "expiresAt", "createdAt"],
+  Conversations: ["id", "senderId", "recipientId", "groupId", "giftId", "createdAt", "updatedAt", "closedAt", "blockedAt"],
+  Messages: ["id", "conversationId", "authorId", "body", "createdAt", "readAt"],
+  MessageReports: ["id", "conversationId", "reporterId", "reason", "createdAt"],
 };
 const ROLE = ["member", "admin"];
 const ID_RE = /^[a-zA-Z0-9_-]{8,100}$/;
@@ -132,10 +136,10 @@ function setup() {
  * Po resetu se všichni uživatelé znovu přihlásí přes Google.
  * Spouštějte pouze ručně v editoru Apps Scriptu, nikdy přes veřejné API.
  */
-function createFreshDatabaseV4() {
+function createFreshDatabaseV6() {
   const props = PropertiesService.getScriptProperties();
   const previous = props.getProperty("SHEET_ID") || "";
-  const ss = SpreadsheetApp.create("Dárkovník v4 – čistá data");
+  const ss = SpreadsheetApp.create("Dárkovník V6 – vývojová databáze");
   props.setProperty("SHEET_ID", ss.getId());
   currentSpreadsheet_ = null;
   currentSpreadsheetId_ = "";
@@ -961,12 +965,14 @@ function createNameDayEvents_(group, members, byName) {
   }
   return events;
 }
-function inviteMember(token, groupId, address) {
+function inviteMember(token, groupId, address, requestedRole) {
   return withLock_(() => {
     const u = user_(token);
     group_(groupId);
     require_(canAdmin_(u.id, groupId));
     const email = email_(address);
+    const group = group_(groupId);
+    const role = requestedRole === 'admin' && group.ownerId === u.id ? 'admin' : 'member';
     require_(email !== u.email, "Sebe už máte ve skupině.");
     const existing = records_("Users").find((x) => x.email === email);
     require_(
@@ -986,7 +992,7 @@ function inviteMember(token, groupId, address) {
       groupId,
       email,
       invitedBy: u.id,
-      role: "member",
+      role,
       expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
       acceptedAt: "",
     });
@@ -1031,7 +1037,9 @@ function saveGift(token, data) {
       url = url_(data.url),
       image = url_(data.image),
       price = str_(data.price, 90),
-      notes = str_(data.notes, 1000);
+      notes = str_(data.notes, 1000),
+      priority = ['none','low','medium','high'].includes(String(data.priority||'none')) ? String(data.priority||'none') : 'none';
+    require_(!price || (/^\d+(?:[.,]\d{1,2})?$/.test(price) && Number(price.replace(',','.')) >= 0), "Cena musí být nezáporné číslo.");
     require_(name, "Název dárku je povinný.");
     let gift,
       notified = 0;
@@ -1054,9 +1062,9 @@ function saveGift(token, data) {
         gift.url !== url ||
         gift.image !== image ||
         gift.price !== price ||
-        gift.notes !== notes ||
+        gift.notes !== notes || gift.priority !== priority ||
         Number(gift.quantity) !== quantity;
-      update_("Gifts", gift, { name, quantity, url, image, price, notes });
+      update_("Gifts", gift, { name, quantity, url, image, price, notes, priority });
       if (changed) {
         const buyers = records_("Reservations").filter(
           (r) => r.giftId === gift.id,
@@ -1082,6 +1090,7 @@ function saveGift(token, data) {
         image,
         price,
         notes,
+        priority,
         receivedQuantity: 0,
         createdAt: now_(),
       });
@@ -1536,4 +1545,118 @@ function sendReminders() {
     }
     return { sent };
   });
+}
+
+
+
+/** Images are WebP blobs in Drive, never multi-MB cell contents. Anyone with the link can view the photo. */
+function uploadImage(token, encoded) {
+  user_(token);
+  require_(typeof encoded === 'string' && /^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(encoded), 'Očekávám obrázek WebP.');
+  require_(encoded.length <= Math.ceil(8*1024*1024*4/3)+100, 'WebP přesahuje 8 MB.');
+  const bytes = Utilities.base64Decode(encoded.split(',')[1]);
+  require_(bytes.length <= 8*1024*1024, 'WebP přesahuje 8 MB.');
+  const props = PropertiesService.getScriptProperties();
+  let folderId = props.getProperty('IMAGES_FOLDER_ID');
+  const folder = folderId ? DriveApp.getFolderById(folderId) : DriveApp.createFolder('Dárkovník obrázky');
+  if (!folderId) props.setProperty('IMAGES_FOLDER_ID',folder.getId());
+  const file = folder.createFile(Utilities.newBlob(bytes, 'image/webp', Utilities.getUuid()+'.webp'));
+  // Use only for non-sensitive product images; the image itself is accessible by link.
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { url: 'https://drive.google.com/thumbnail?id='+file.getId()+'&sz=w1200' };
+}
+function resendInvite(token, inviteId) {
+  return withLock_(() => {
+    const u=user_(token);
+    const i=records_('Invites').find(x=>x.id===inviteId && !x.acceptedAt);
+    require_(i && Date.parse(i.expiresAt)>Date.now(), 'Pozvánka už není platná.');
+    require_(canAdmin_(u.id,i.groupId),'Nemáte oprávnění.');
+    send_(i.email,'Pozvánka do Dárkovníku','Byli jste pozváni do skupiny „'+group_(i.groupId).name+'“.\nPřihlaste se: '+link_()+'\nPozvánka platí do '+i.expiresAt+'.');
+    return {ok:true};
+  });
+}
+function conversationAccess_(token, id) {
+  const u=user_(token);
+  const c=records_('Conversations').find(x=>x.id===id);
+  require_(c && (c.senderId===u.id || c.recipientId===u.id),'Konverzace není dostupná.');
+  return {u,c};
+}
+/** Lehký přehled nových zpráv bez předávání identity anonymního odesílatele. */
+function messageUnreadCount(token) {
+  const u=user_(token);
+  const mine=new Set(records_('Conversations').filter(c=>c.senderId===u.id||c.recipientId===u.id).map(c=>c.id));
+  return {count:records_('Messages').filter(m=>mine.has(m.conversationId)&&m.authorId!==u.id&&!m.readAt).length};
+}
+function conversations(token) {
+  const u=user_(token);
+  const all=records_('Conversations').filter(c=>c.senderId===u.id||c.recipientId===u.id);
+  const ids=new Set(all.map(c=>c.id));
+  const msgs=records_('Messages').filter(m=>ids.has(m.conversationId));
+  const groups=new Map(records_('Groups').map(g=>[g.id,g]));
+  const gifts=new Map(records_('Gifts').map(g=>[g.id,g]));
+  const users=new Map(records_('Users').map(x=>[x.id,x]));
+  return all.map(c=>{
+    const mine=c.senderId===u.id;
+    const theirs=msgs.filter(m=>m.conversationId===c.id).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+    const last=theirs[theirs.length-1];
+    return {id:c.id,groupId:c.groupId,groupName:groups.get(c.groupId)?.name||'',giftId:c.giftId||'',giftName:c.giftId?gifts.get(c.giftId)?.name||'Přání není dostupné':'',isAnonymousSender:mine,recipientName:mine?users.get(c.recipientId)?.name||'Člen skupiny':'Anonymní člen',lastBody:last?.body||'',lastAt:last?.createdAt||c.createdAt,unread:theirs.filter(m=>m.authorId!==u.id&&!m.readAt).length,closed:!!c.closedAt,blocked:!!c.blockedAt};
+  }).sort((a,b)=>b.lastAt.localeCompare(a.lastAt));
+}
+function createConversation(token, recipientId, groupId, giftId, firstMessage) {
+  return withLock_(()=>{
+    const u=user_(token);
+    require_(recipientId!==u.id,'Nelze napsat sám sobě.');
+    require_(member_(u.id,groupId)&&member_(recipientId,groupId),'Musíte být členy stejné skupiny.');
+    const body=str_(firstMessage,2000);
+    require_(body.length>0,'Napište zprávu.');
+    if(giftId){
+      const gift=gift_(giftId);
+      require_(gift.ownerId===recipientId,'Dotaz k přání musí směřovat jeho majiteli.');
+      require_(records_('Shares').some(x=>x.giftId===giftId&&x.groupId===groupId),'Přání není v této skupině sdílené.');
+    }
+    const prior=records_('Conversations').filter(c=>c.senderId===u.id&&c.recipientId===recipientId&&c.blockedAt);
+    require_(!prior.length,'Příjemce si nepřeje další zprávy.');
+    const active=records_('Conversations').filter(c=>c.senderId===u.id && Date.now()-Date.parse(c.createdAt)<86400000);
+    require_(active.length<12,'Dosáhli jste denního limitu nových konverzací.');
+    const c=add_('Conversations',{id:uid_(),senderId:u.id,recipientId,groupId,giftId:giftId||'',createdAt:now_(),updatedAt:now_(),closedAt:'',blockedAt:''});
+    add_('Messages',{id:uid_(),conversationId:c.id,authorId:u.id,body,createdAt:now_(),readAt:''});
+    return {id:c.id,ok:true};
+  });
+}
+function conversationMessages(token,id,limit,offset) {
+  const {u,c}=conversationAccess_(token,id);
+  const n=int_(limit||50,1,100),start=int_(offset||0,0,1000000);
+  const rows=records_('Messages').filter(m=>m.conversationId===id).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+  const slice=rows.slice(Math.max(0,rows.length-start-n),rows.length-start);
+  for(const m of slice) if(m.authorId!==u.id&&!m.readAt) update_('Messages',m,{readAt:now_()});
+  return {id:c.id,messages:slice.map(m=>({id:m.id,body:m.body,createdAt:m.createdAt,mine:m.authorId===u.id})),hasMore:rows.length>start+n};
+}
+function sendMessage(token,id,text) {
+  return withLock_(()=>{
+    const {u,c}=conversationAccess_(token,id);
+    require_(!c.closedAt&&!c.blockedAt,'Konverzace je uzavřená.');
+    const body=str_(text,2000);require_(body,'Zpráva je prázdná.');
+    const messages=records_('Messages').filter(m=>m.authorId===u.id&&Date.now()-Date.parse(m.createdAt)<60000);
+    require_(messages.length<10,'Posíláte příliš mnoho zpráv.');
+    const m=add_('Messages',{id:uid_(),conversationId:id,authorId:u.id,body,createdAt:now_(),readAt:''});
+    update_('Conversations',c,{updatedAt:m.createdAt});
+    return {ok:true,id:m.id};
+  });
+}
+function setConversationState(token,id,action) {
+  return withLock_(()=>{
+    const {u,c}=conversationAccess_(token,id);
+    require_(['close','reopen','block'].includes(action),'Neplatná akce.');
+    if(action==='block') require_(c.recipientId===u.id,'Blokovat může pouze příjemce.');
+    if(action==='reopen')require_(!c.blockedAt,'Zablokovanou konverzaci nelze otevřít.');
+    update_('Conversations',c, action==='block'?{blockedAt:now_(),closedAt:now_()}:{closedAt:action==='close'?now_():''});
+    return {ok:true};
+  });
+}
+function reportConversation(token,id,reason) {
+  const {u}=conversationAccess_(token,id);
+  const text=str_(reason,1000);require_(text,'Zadejte důvod nahlášení.');
+  require_(!records_('MessageReports').some(x=>x.conversationId===id&&x.reporterId===u.id), 'Konverzace už byla nahlášena.');
+  add_('MessageReports',{id:uid_(),conversationId:id,reporterId:u.id,reason:text,createdAt:now_()});
+  return {ok:true};
 }
