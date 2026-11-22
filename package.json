@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/export-gas.mjs",
+    "build": "vite build",
     "preview": "vite preview",
-    "test": "node tests/verify.cjs && node tests/backend.integration.cjs"
+    "test": "node tests/backend.integration.cjs",
+    "build:standalone": "node scripts/build-standalone.cjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

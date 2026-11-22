@@ -211,11 +211,21 @@ function records_(name) {
     ]),
   ));
 }
+/** Invalidation is global: all users sharing groups see a fresh version after a write. */
+const DASHBOARD_TABLES_ = new Set(['Users','Groups','Members','Invites','Gifts','Shares','Reservations','Events','Alerts','NameDays']);
+function invalidateDashboard_(table) {
+  if (DASHBOARD_TABLES_.has(table))
+    PropertiesService.getScriptProperties().setProperty('DASHBOARD_VERSION', Utilities.getUuid());
+}
+function dashboardCache_() {
+  return typeof CacheService !== 'undefined' ? CacheService.getScriptCache() : null;
+}
 function add_(name, obj) {
   const v = HEADERS[name].map((k) =>
     obj[k] === undefined ? "" : String(obj[k]),
   );
   sheet_(name).appendRow(v);
+  invalidateDashboard_(name);
   delete memoRecords_[name];
   if (name === "NameDays") holidayOptionsMemo_ = null;
   return obj;
@@ -227,11 +237,13 @@ function update_(name, r, patch) {
     HEADERS[name].map((k) => (v[k] === undefined ? "" : String(v[k]))),
   ]);
   delete memoRecords_[name];
+  invalidateDashboard_(name);
   if (name === "NameDays") holidayOptionsMemo_ = null;
   return v;
 }
 function remove_(name, r) {
   sheet_(name).deleteRow(r._row);
+  invalidateDashboard_(name);
   delete memoRecords_[name];
   if (name === "NameDays") holidayOptionsMemo_ = null;
 }
@@ -548,6 +560,15 @@ function dashboard(token) {
         update_("Invites", i, { acceptedAt: now_() });
       }
     });
+  // Cache a *user-scoped* dashboard, not entire unfiltered Sheets data.
+  // Auth runs first, so logout/expiration cannot bypass session validation.
+  const dashboardVersion = PropertiesService.getScriptProperties().getProperty('DASHBOARD_VERSION') || '0';
+  const dashboardCache = dashboardCache_();
+  const dashboardKey = 'dv6_' + u.id + '_' + dashboardVersion.replace(/[^a-zA-Z0-9_-]/g,'');
+  if (dashboardCache) {
+    const cached = dashboardCache.get(dashboardKey);
+    if (cached) { try { return JSON.parse(cached); } catch (err) { /* Cache miss */ } }
+  }
   const members = records_("Members"),
     groups = records_("Groups"),
     users = records_("Users"),
@@ -691,7 +712,7 @@ function dashboard(token) {
     if (enabled_(g.namedaysEnabled))
       autoEvents.push(...createNameDayEvents_(g, g.members, nameDays));
   }
-  return {
+  const response = {
     profile: clean_(u),
     groups: myGroups,
     holidayOptions,
@@ -708,6 +729,14 @@ function dashboard(token) {
       .map(clean_)
       .concat(autoEvents),
   };
+  if (dashboardCache) {
+    const json = JSON.stringify(response);
+    // CacheService is limited to 100 KiB per value; do not cache oversized dashboards.
+    if (Utilities.newBlob(json).getBytes().length < 90000) {
+      try { dashboardCache.put(dashboardKey, json, 90); } catch (err) { /* Cache capacity exceeded: return fresh data. */ }
+    }
+  }
+  return response;
 }
 
 /** Ověření pouze agregovaných stavů vlastních přání. Volá se explicitně po kliknutí na odhalení. */
