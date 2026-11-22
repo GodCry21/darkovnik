@@ -8,6 +8,7 @@
     <script>
       (function(){
         var allowed = <?!= JSON.stringify(allowedOrigin) ?>;
+        var nonce = <?!= JSON.stringify(bridgeNonce) ?>;
         var publicMethods = ['signInWithGoogle','logoutSession','dashboard','saveProfile','createGroup','inviteMember','setRole','saveGift','deleteGift','reserveGift','updateReservation','markAlertRead','markReceived','saveEvent','deleteEvent','fetchProduct','updateGroup','setGroupShares','ownGiftStatuses','cancelInvite','uploadImage','resendInvite','conversations','messageUnreadCount','createConversation','conversationMessages','sendMessage','setConversationState','reportConversation'];
         window.addEventListener('message',function(event){
           if(event.origin!==allowed || event.source!==window.top)return;
@@ -20,7 +21,7 @@
              .withFailureHandler(function(err){event.source.postMessage({app:'darkovnik',type:'result',id:msg.id,ok:false,error:err&&err.message||String(err)},allowed);})[msg.method].apply(null,args);
           }catch(e){event.source.postMessage({app:'darkovnik',type:'result',id:msg.id,ok:false,error:e.message},allowed);}
         });
-        window.top.postMessage({app:'darkovnik',type:'ready'},allowed);
+        window.top.postMessage({app:'darkovnik',type:'ready',nonce:nonce},allowed);
       })();
     </script>
   </body>

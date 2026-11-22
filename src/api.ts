@@ -7,6 +7,7 @@ let frame: HTMLIFrameElement | null = null;
 let bridgeWindow: Window | null = null;
 let origin = '';
 let ready = false;
+const bridgeNonce = Array.from(crypto.getRandomValues(new Uint8Array(24)), n => n.toString(16).padStart(2, '0')).join('');
 let serial = 0;
 const waiting = new Map<string, {resolve:(v:any)=>void;reject:(e:Error)=>void;timer:ReturnType<typeof setTimeout>}>();
 const readyWaiters: (()=>void)[] = [];
@@ -17,7 +18,9 @@ export function initBridge() {
     try { hostname = new URL(event.origin).hostname; } catch { return; }
     if (!hostname.endsWith('.googleusercontent.com') || event.data?.app !== 'darkovnik') return;
     if (event.data.type === 'ready') {
-      if (event.source !== frame?.contentWindow) return;
+      // Apps Script HTMLService uses a nested iframe; its source is not always frame.contentWindow.
+      // Authenticate the inner frame using the unpredictable nonce issued in our iframe URL.
+      if (event.data.nonce !== bridgeNonce) return;
       bridgeWindow = event.source as Window; origin = event.origin; ready = true;
       readyWaiters.splice(0).forEach(fn=>fn()); return;
     }
@@ -30,7 +33,7 @@ export function initBridge() {
     }
   });
   frame = document.createElement('iframe');
-  frame.src = GAS_URL;
+  frame.src = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 'bridge_nonce=' + encodeURIComponent(bridgeNonce);
   frame.setAttribute('aria-hidden','true'); frame.title = 'Datové připojení';
   frame.style.cssText='position:absolute;width:1px;height:1px;opacity:0;pointer-events:none';
   document.body.appendChild(frame);

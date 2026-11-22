@@ -167,8 +167,10 @@ function setupTriggers() {
   }
   Logger.log("Triggery připraveny: " + desired.map((x) => x[0]).join(", "));
 }
-function doGet() {
+function doGet(e) {
   const t = HtmlService.createTemplateFromFile("Bridge");
+  const bridgeNonce = String((e && e.parameter && e.parameter.bridge_nonce) || "");
+  t.bridgeNonce = /^[0-9a-f]{48}$/.test(bridgeNonce) ? bridgeNonce : "";
   const origin =
     PropertiesService.getScriptProperties().getProperty("FRONTEND_ORIGIN");
   require_(
