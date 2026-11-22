@@ -1,22 +1,13 @@
-# Dárkovník – nový frontend podle Figmy
+# Dárkovník – frontend + backend
 
-React + Vite frontend propojený přes iframe bridge s Google Apps Script a Google Sheets. Frontend používá strukturu, ikony a styly dodané Figmy; ukázková data původního Figma prototypu se nepoužívají.
+Aktivní frontend: `src/LiveApp.tsx`. Backend: `apps-script/Code.gs`.
 
-**Nasazení, testy a omezení:** [NASAZENI-A-TESTY.md](./NASAZENI-A-TESTY.md)
-
-## Lokálně
+**Začněte v [CO-JE-NOVE-A-JAK-NASADIT.md](CO-JE-NOVE-A-JAK-NASADIT.md).**
 
 ```bash
 npm ci
-cp .env.example .env
-# vyplnit VITE_GAS_URL a VITE_GOOGLE_CLIENT_ID
-npm run dev
+npm test
+npm run build
 ```
 
-## GitHub Pages
-
-GitHub Actions workflow `.github/workflows/deploy.yml` používá `npm ci`, `npm run build` a publikuje `dist/`. Ve **Settings → Secrets and variables → Actions → Variables** vyplň `VITE_GAS_URL` a `VITE_GOOGLE_CLIENT_ID`.
-
-## Apps Script
-
-Nasaď `apps-script/Code.gs` jako aktualizaci existujícího deploymentu. Sešit databáze může zůstat stávající. `Bridge.html` přeposílá pouze povolené API metody z odpovídajícího původu.
+Pro alternativní statické sestavení lze použít `npm run build:standalone`.

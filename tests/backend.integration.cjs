@@ -1,7 +1,7 @@
 /** In-memory Google Apps Script service emulation: no Google account/network needed. */
 const fs=require('fs'),vm=require('vm'),crypto=require('crypto'),assert=require('node:assert/strict');
 const source=fs.readFileSync('apps-script/Code.gs','utf8');
-let counter=0;const db=new Map(), props=new Map([['SHEET_ID','dev-sheet'],['GOOGLE_CLIENT_ID','test-client']]);
+let counter=0;const sentEmails=[];const db=new Map(), props=new Map([['SHEET_ID','dev-sheet'],['GOOGLE_CLIENT_ID','test-client']]);
 class Sheet{
  constructor(name){this.name=name;this.rows=[];}
  getLastRow(){return this.rows.length;}
@@ -21,7 +21,7 @@ const ctx={console,Map,Set,Date,JSON,Math,Number,String,RegExp,Object,Array,Erro
  PropertiesService:{getScriptProperties:()=>({getProperty:key=>props.get(key)||'',setProperty:(key,v)=>props.set(key,v)})},
  LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock:()=>{}})},
  Utilities:{getUuid:()=>`00000000-0000-4000-8000-${String(++counter).padStart(12,'0')}`,formatDate:(d,tz,fmt)=>`${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`,computeDigest:(_,token)=>[...crypto.createHash('sha256').update(token).digest()],base64EncodeWebSafe:x=>Buffer.from(x).toString('base64url'),DigestAlgorithm:{SHA_256:'SHA_256'},base64Decode:x=>[...Buffer.from(x,'base64')]},
- Logger:{log:()=>{}},MailApp:{sendEmail:()=>{}},
+ Logger:{log:()=>{}},MailApp:{sendEmail:message=>sentEmails.push(message)},
 };
 vm.createContext(ctx);vm.runInContext(source,ctx);
 const invoke=(name,...args)=>vm.runInContext(`${name}.apply(null,__args__)`,Object.assign(ctx,{__args__:args}));
@@ -63,6 +63,10 @@ check('anonymous conversation hides sender identity from recipient',()=>{
  const history=invoke('conversationMessages',tokens.alice,thread,50,0);
  assert.equal(history.messages[0].body,'Vyhovují bílé?');assert.equal(history.messages[0].mine,false);
  assert(!JSON.stringify(history).includes(bob));
+});
+check('anonymous message creates an in-app alert and queued email',()=>{
+ const queue=invoke('records_','Alerts').filter(a=>a.userId===alice&&a.emailStatus==='pending');assert(queue.some(a=>a.message.includes('anonymní zprávu')));
+ const result=invoke('sendQueuedAlerts');assert(result.sent>=1);assert(sentEmails.some(x=>x.to==='alice@example.com'));assert(sentEmails.filter(x=>x.to==='alice@example.com').every(x=>!String(x.body).includes('bob@example.com')));
 });
 check('receiver can reply and then block, sender cannot bypass block',()=>{
  invoke('sendMessage',tokens.alice,thread,'Ano');invoke('setConversationState',tokens.alice,thread,'block');

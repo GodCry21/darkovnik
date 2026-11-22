@@ -1651,6 +1651,7 @@ function createConversation(token, recipientId, groupId, giftId, firstMessage) {
     require_(active.length<12,'Dosáhli jste denního limitu nových konverzací.');
     const c=add_('Conversations',{id:uid_(),senderId:u.id,recipientId,groupId,giftId:giftId||'',createdAt:now_(),updatedAt:now_(),closedAt:'',blockedAt:''});
     add_('Messages',{id:uid_(),conversationId:c.id,authorId:u.id,body,createdAt:now_(),readAt:''});
+    alertBuyer_(recipientId, giftId||'', 'Máš novou anonymní zprávu v Dárkovníku.');
     return {id:c.id,ok:true};
   });
 }
@@ -1671,6 +1672,7 @@ function sendMessage(token,id,text) {
     require_(messages.length<10,'Posíláte příliš mnoho zpráv.');
     const m=add_('Messages',{id:uid_(),conversationId:id,authorId:u.id,body,createdAt:now_(),readAt:''});
     update_('Conversations',c,{updatedAt:m.createdAt});
+    alertBuyer_(u.id===c.senderId?c.recipientId:c.senderId,c.giftId||'', 'Máš novou zprávu v anonymní konverzaci v Dárkovníku.');
     return {ok:true,id:m.id};
   });
 }
