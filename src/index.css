@@ -6036,3 +6036,131 @@ body {
   line-clamp: 3;
   overflow: hidden;
 }
+
+/* Vylepšení přání a členů skupiny – 2026-11 */
+/* Dvě karty na běžných telefonech, včetně iPhonu o šířce 375/390 px. */
+@media (min-width: 360px) and (max-width: 760px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .product-grid > * {
+    min-width: 0;
+  }
+  .product-image {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+  .product-content {
+    padding: 10px;
+    min-width: 0;
+  }
+  .product-meta {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .live-card-actions {
+    flex-wrap: wrap;
+  }
+  .live-card-actions .button {
+    min-width: 0;
+    white-space: normal;
+  }
+}
+@media (max-width: 359px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.product-description {
+  min-width: 0;
+}
+.product-note.expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+.product-note-toggle {
+  display: inline-block;
+  border: 0;
+  background: transparent;
+  padding: 5px 0;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.member-view-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto !important;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+.live-member > button:first-child {
+  min-width: 0;
+}
+.live-member > button:first-child span:nth-child(2) {
+  min-width: 0;
+}
+.gift-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(135px, 190px) minmax(
+      135px,
+      190px
+    );
+  gap: 9px;
+  margin: 10px 0 18px;
+}
+.gift-search,
+.gift-select {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-muted);
+}
+.gift-search input,
+.gift-select select {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  padding: 9px 6px;
+  color: var(--text);
+  background: transparent;
+  font-size: 13px;
+}
+.gift-select select {
+  cursor: pointer;
+}
+.gift-search:focus-within,
+.gift-select:focus-within {
+  border-color: var(--primary);
+}
+@media (max-width: 760px) {
+  .gift-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gift-search {
+    grid-column: 1 / -1;
+  }
+  .member-view-label {
+    font-size: 10px;
+  }
+}
+@media (max-width: 390px) {
+  .live-member > button:first-child {
+    flex-wrap: wrap;
+  }
+  .member-view-label {
+    margin-left: auto;
+  }
+}

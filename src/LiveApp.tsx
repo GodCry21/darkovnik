@@ -348,6 +348,77 @@ function Qty({
     </div>
   );
 }
+type GiftFilter = "all" | "available" | "full" | "mine" | "priority";
+type GiftSort =
+  | "newest"
+  | "oldest"
+  | "priceAsc"
+  | "priceDesc"
+  | "name"
+  | "priority";
+
+function GiftToolbar({
+  search,
+  onSearch,
+  filter,
+  onFilter,
+  sort,
+  onSort,
+}: {
+  search: string;
+  onSearch: (value: string) => void;
+  filter: GiftFilter;
+  onFilter: (value: GiftFilter) => void;
+  sort: GiftSort;
+  onSort: (value: GiftSort) => void;
+}) {
+  return (
+    <div
+      className="gift-toolbar"
+      role="search"
+      aria-label="Hledání a filtrování přání"
+    >
+      <label className="gift-search">
+        <span className="sr-only">Hledat přání</span>
+        <I name="search" size={17} />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+          placeholder="Hledat přání…"
+        />
+      </label>
+      <label className="gift-select">
+        <span className="sr-only">Filtrovat přání</span>
+        <select
+          value={filter}
+          onChange={(e) => onFilter(e.target.value as GiftFilter)}
+        >
+          <option value="all">Všechna přání</option>
+          <option value="available">Dostupná</option>
+          <option value="full">Plně rezervovaná</option>
+          <option value="mine">Moje rezervace</option>
+          <option value="priority">S prioritou</option>
+        </select>
+      </label>
+      <label className="gift-select">
+        <span className="sr-only">Seřadit přání</span>
+        <select
+          value={sort}
+          onChange={(e) => onSort(e.target.value as GiftSort)}
+        >
+          <option value="newest">Nejnovější</option>
+          <option value="oldest">Nejstarší</option>
+          <option value="priceAsc">Cena od nejnižší</option>
+          <option value="priceDesc">Cena od nejvyšší</option>
+          <option value="name">Název A–Z</option>
+          <option value="priority">Podle priority</option>
+        </select>
+      </label>
+    </div>
+  );
+}
+
 function Product({
   g,
   owner,
@@ -370,6 +441,21 @@ function Product({
   const groupNames = (g.groupIds || [])
     .map((id: string) => groups.find((x) => x.id === id)?.name)
     .filter(Boolean);
+  const [noteExpanded, setNoteExpanded] = useState(false);
+  const [noteOverflow, setNoteOverflow] = useState(false);
+  const noteRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const el = noteRef.current;
+    if (!el) return;
+    const measure = () => {
+      // Měříme jen sbalenou poznámku; při rozbalení zůstane tlačítko viditelné.
+      if (!noteExpanded) setNoteOverflow(el.scrollHeight > el.clientHeight + 2);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [g.notes, noteExpanded]);
   return (
     <article className="product-card panel">
       <div className="product-image live-image">
@@ -411,9 +497,24 @@ function Product({
         <h2>{g.name}</h2>
         <strong className="price">{money(g.price)}</strong>
         {g.notes?.trim() && (
-          <p className="product-note" title={g.notes}>
-            {g.notes}
-          </p>
+          <div className="product-description">
+            <p
+              ref={noteRef}
+              className={"product-note" + (noteExpanded ? " expanded" : "")}
+            >
+              {g.notes}
+            </p>
+            {(noteOverflow || noteExpanded) && (
+              <button
+                type="button"
+                className="product-note-toggle"
+                aria-expanded={noteExpanded}
+                onClick={() => setNoteExpanded((value) => !value)}
+              >
+                {noteExpanded ? "Zobrazit méně" : "Zobrazit více"}
+              </button>
+            )}
+          </div>
         )}
         <div className="product-meta">
           <span>
@@ -593,6 +694,9 @@ export default function LiveApp() {
   const [month, setMonth] = useState(() => new Date().getMonth());
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [calendarView, setCalendarView] = useState<"month" | "agenda">("month");
+  const [giftSearch, setGiftSearch] = useState("");
+  const [giftFilter, setGiftFilter] = useState<GiftFilter>("all");
+  const [giftSort, setGiftSort] = useState<GiftSort>("newest");
   const [wishFilter, setWishFilter] = useState<"all" | "active" | "done">(
     "all",
   );
@@ -740,6 +844,75 @@ export default function LiveApp() {
     alerts: any[] = data?.alerts || [];
   const selectedGroup = groups.find((g) => g.id === groupId),
     person = selectedGroup?.members?.find((m: any) => m.id === personId);
+
+  const resetGiftTools = () => {
+    setGiftSearch("");
+    setGiftFilter("all");
+    setGiftSort("newest");
+  };
+
+  const selectPerson = (id: string) => {
+    setPersonId(id);
+    resetGiftTools();
+  };
+
+  const findGifts = (items: any[]) => {
+    const query = giftSearch.trim().toLocaleLowerCase("cs-CZ");
+    const priorityOrder: Record<string, number> = {
+      high: 3,
+      medium: 2,
+      low: 1,
+      none: 0,
+    };
+    const priceValue = (gift: any) => {
+      const raw = String(gift.price ?? "")
+        .replace(/\s/g, "")
+        .replace(",", ".");
+      return raw && Number.isFinite(Number(raw)) ? Number(raw) : null;
+    };
+    const dateValue = (gift: any) => {
+      const value = Date.parse(
+        gift.createdAt || gift.created || gift.dateCreated || "",
+      );
+      return Number.isFinite(value) ? value : 0;
+    };
+    return items
+      .filter(
+        (gift) =>
+          !query ||
+          [gift.name, gift.notes, gift.ownerName].some((value) =>
+            String(value || "")
+              .toLocaleLowerCase("cs-CZ")
+              .includes(query),
+          ),
+      )
+      .filter((gift) => {
+        if (giftFilter === "available") return Number(gift.available) > 0;
+        if (giftFilter === "full") return Number(gift.available) <= 0;
+        if (giftFilter === "mine")
+          return Array.isArray(gift.mine) && gift.mine.length > 0;
+        if (giftFilter === "priority")
+          return !!gift.priority && gift.priority !== "none";
+        return true;
+      })
+      .sort((a, b) => {
+        if (giftSort === "name")
+          return String(a.name).localeCompare(String(b.name), "cs-CZ");
+        if (giftSort === "priority")
+          return (
+            (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+          );
+        if (giftSort === "priceAsc" || giftSort === "priceDesc") {
+          const av = priceValue(a),
+            bv = priceValue(b);
+          if (av === null) return bv === null ? 0 : 1;
+          if (bv === null) return -1;
+          return giftSort === "priceAsc" ? av - bv : bv - av;
+        }
+        const difference = dateValue(b) - dateValue(a);
+        return giftSort === "newest" ? difference : -difference;
+      });
+  };
 
   useEffect(() => {
     setPersonId("");
@@ -1302,15 +1475,19 @@ export default function LiveApp() {
                 <Header
                   eyebrow="SPOLEČNÉ SEZNAMY"
                   title={
-                    person ? person.name : selectedGroup?.name || "Moje skupiny"
+                    person
+                      ? `Přání: ${person.name}`
+                      : selectedGroup?.name || "Moje skupiny"
                   }
                   description={
-                    selectedGroup
-                      ? `${selectedGroup.members.length} členů · ${selectedGroup.role === "admin" ? "Spravuješ skupinu" : "Jsi členem skupiny"}`
-                      : "Přání rodiny a přátel."
+                    person
+                      ? `Skupina: ${selectedGroup?.name}`
+                      : selectedGroup
+                        ? `${selectedGroup.members.length} členů · ${selectedGroup.role === "admin" ? "Spravuješ skupinu" : "Jsi členem skupiny"}`
+                        : "Přání rodiny a přátel."
                   }
                 >
-                  {groups.length > 1 && selectedGroup && (
+                  {!person && groups.length > 1 && selectedGroup && (
                     <Btn
                       variant="secondary"
                       onClick={() => {
@@ -1322,18 +1499,31 @@ export default function LiveApp() {
                     </Btn>
                   )}
 
-                  <Btn
-                    icon="plus"
-                    onClick={() => {
-                      setGroupDraft({
-                        name: "",
-                        description: "",
-                      });
-                      setModal("createGroup");
-                    }}
-                  >
-                    Nová skupina
-                  </Btn>
+                  {!person && (
+                    <Btn
+                      icon="plus"
+                      onClick={() => {
+                        setGroupDraft({ name: "", description: "" });
+                        setModal("createGroup");
+                      }}
+                    >
+                      Nová skupina
+                    </Btn>
+                  )}
+                  {person && person.id !== data.profile.id && (
+                    <Btn
+                      icon="message"
+                      onClick={() =>
+                        startMessage({
+                          userId: person.id,
+                          groupId,
+                          name: person.name,
+                        })
+                      }
+                    >
+                      Zeptat se anonymně
+                    </Btn>
+                  )}
                 </Header>
                 {!selectedGroup ? (
                   <div className="live-group-grid">
@@ -1344,6 +1534,7 @@ export default function LiveApp() {
                         onClick={() => {
                           setGroupId(g.id);
                           setPersonId("");
+                          resetGiftTools();
                         }}
                       >
                         <div className="group-symbol">
@@ -1407,7 +1598,7 @@ export default function LiveApp() {
                         <div className="live-member-grid">
                           {selectedGroup.members.map((m: any) => (
                             <div key={m.id} className="panel live-member">
-                              <button onClick={() => setPersonId(m.id)}>
+                              <button onClick={() => selectPerson(m.id)}>
                                 <Avatar name={m.name} avatar={m.avatar} />
                                 <span>
                                   <strong>
@@ -1420,22 +1611,10 @@ export default function LiveApp() {
                                       : "Člen"}
                                   </small>
                                 </span>
-                                <I name="chevron" />
+                                <span className="member-view-label">
+                                  Zobrazit přání <I name="chevron" size={14} />
+                                </span>
                               </button>
-                              {m.id !== data.profile.id && (
-                                <Btn
-                                  variant="ghost"
-                                  onClick={() =>
-                                    startMessage({
-                                      userId: m.id,
-                                      groupId,
-                                      name: m.name,
-                                    })
-                                  }
-                                >
-                                  Anonymní zpráva
-                                </Btn>
-                              )}
                               {selectedGroup.ownerId === data.profile.id &&
                                 m.id !== data.profile.id && (
                                   <select
@@ -1460,39 +1639,51 @@ export default function LiveApp() {
                           ))}
                         </div>
                         <SectionTitle title="Přání ostatních" />
+                        <GiftToolbar
+                          search={giftSearch}
+                          onSearch={setGiftSearch}
+                          filter={giftFilter}
+                          onFilter={setGiftFilter}
+                          sort={giftSort}
+                          onSort={setGiftSort}
+                        />
                         <div className="product-grid">
-                          {visible
-                            .filter((g) => g.groupIds.includes(groupId))
-                            .map((g) => (
-                              <Product
-                                key={g.id}
-                                g={g}
-                                owner={false}
-                                groups={groups}
-                                onEdit={() => {}}
-                                onReceive={() => {}}
-                                onReserve={() => openReservation(g)}
-                                onMessage={() =>
-                                  startMessage({
-                                    userId: g.ownerId,
-                                    groupId,
-                                    giftId: g.id,
-                                    giftName: g.name,
-                                    name: g.ownerName,
-                                  })
-                                }
-                                onManage={(r) => {
-                                  setCurrent(r);
-                                  setQuantity(Number(r.quantity));
-                                  setModal("reservation");
-                                }}
-                              />
-                            ))}
+                          {findGifts(
+                            visible.filter((g) =>
+                              g.groupIds?.includes(groupId),
+                            ),
+                          ).map((g) => (
+                            <Product
+                              key={g.id}
+                              g={g}
+                              owner={false}
+                              groups={groups}
+                              onEdit={() => {}}
+                              onReceive={() => {}}
+                              onReserve={() => openReservation(g)}
+                              onMessage={() =>
+                                startMessage({
+                                  userId: g.ownerId,
+                                  groupId,
+                                  giftId: g.id,
+                                  giftName: g.name,
+                                  name: g.ownerName,
+                                })
+                              }
+                              onManage={(r) => {
+                                setCurrent(r);
+                                setQuantity(Number(r.quantity));
+                                setModal("reservation");
+                              }}
+                            />
+                          ))}
                         </div>
-                        {!visible.some((g) => g.groupIds.includes(groupId)) && (
+                        {!findGifts(
+                          visible.filter((g) => g.groupIds?.includes(groupId)),
+                        ).length && (
                           <Empty
-                            title="Zatím žádná přání"
-                            description="Až členové zveřejní své seznamy, uvidíš je tady."
+                            title="Žádná odpovídající přání"
+                            description="Zkus jiné hledání nebo uprav filtry."
                           />
                         )}
                       </>
@@ -1501,60 +1692,72 @@ export default function LiveApp() {
                       <>
                         <button
                           className="live-back"
-                          onClick={() => setPersonId("")}
+                          onClick={() => selectPerson("")}
                         >
                           ← Zpět ke skupině
                         </button>
+                        <GiftToolbar
+                          search={giftSearch}
+                          onSearch={setGiftSearch}
+                          filter={giftFilter}
+                          onFilter={setGiftFilter}
+                          sort={giftSort}
+                          onSort={setGiftSort}
+                        />
                         <div className="product-grid">
-                          {(person.id === data.profile.id ? own : visible)
-                            .filter(
+                          {findGifts(
+                            (person.id === data.profile.id
+                              ? own
+                              : visible
+                            ).filter(
                               (g) =>
                                 g.ownerId === person.id &&
                                 g.groupIds?.includes(groupId),
-                            )
-                            .map((g) => (
-                              <Product
-                                key={g.id}
-                                g={g}
-                                owner={person.id === data.profile.id}
-                                groups={groups}
-                                onEdit={() => newGift(g)}
-                                onReceive={() => {
-                                  setCurrent(g);
-                                  setQuantity(Number(g.receivedQuantity) || 0);
-                                  setModal("received");
-                                }}
-                                onReserve={() => openReservation(g)}
-                                onMessage={() =>
-                                  startMessage({
-                                    userId: g.ownerId,
-                                    groupId,
-                                    giftId: g.id,
-                                    giftName: g.name,
-                                    name: g.ownerName,
-                                  })
-                                }
-                                onManage={(r) => {
-                                  setCurrent(r);
-                                  setQuantity(Number(r.quantity));
-                                  setModal("reservation");
-                                }}
-                              />
-                            ))}
+                            ),
+                          ).map((g) => (
+                            <Product
+                              key={g.id}
+                              g={g}
+                              owner={person.id === data.profile.id}
+                              groups={groups}
+                              onEdit={() => newGift(g)}
+                              onReceive={() => {
+                                setCurrent(g);
+                                setQuantity(Number(g.receivedQuantity) || 0);
+                                setModal("received");
+                              }}
+                              onReserve={() => openReservation(g)}
+                              onMessage={() =>
+                                startMessage({
+                                  userId: g.ownerId,
+                                  groupId,
+                                  giftId: g.id,
+                                  giftName: g.name,
+                                  name: g.ownerName,
+                                })
+                              }
+                              onManage={(r) => {
+                                setCurrent(r);
+                                setQuantity(Number(r.quantity));
+                                setModal("reservation");
+                              }}
+                            />
+                          ))}
                         </div>
-                        {person.id !== data.profile.id && (
-                          <Btn
-                            variant="secondary"
-                            onClick={() =>
-                              startMessage({
-                                userId: person.id,
-                                groupId,
-                                name: person.name,
-                              })
-                            }
-                          >
-                            Poslat anonymní zprávu
-                          </Btn>
+                        {!findGifts(
+                          (person.id === data.profile.id
+                            ? own
+                            : visible
+                          ).filter(
+                            (g) =>
+                              g.ownerId === person.id &&
+                              g.groupIds?.includes(groupId),
+                          ),
+                        ).length && (
+                          <Empty
+                            title="Žádná odpovídající přání"
+                            description="Zkus změnit hledání nebo filtry."
+                          />
                         )}
                       </>
                     )}
