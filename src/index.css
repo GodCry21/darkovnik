@@ -6164,3 +6164,38 @@ body {
     margin-left: auto;
   }
 }
+
+
+/* Roletky – světlý a tmavý režim */
+select {
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  color-scheme: light;
+}
+
+select option,
+select optgroup {
+  background-color: #ffffff;
+  color: #20241f;
+}
+
+/* Dark mode */
+.dark select {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+  color-scheme: dark;
+}
+
+.dark select option,
+.dark select optgroup {
+  background-color: #202421;
+  color: #f0f1ed;
+}
+
+/* Fokus při ovládání klávesnicí */
+select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
